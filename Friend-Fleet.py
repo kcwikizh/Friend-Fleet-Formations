@@ -51,8 +51,7 @@ RealPoint = []
 TempPoints = []
 TempPoint = []
 for i in RemovingFaults:
-    Route = json.loads(requests.get(
-        'https://tsunkit.net/api/routing/maps/{}-{}'.format(MapareaId, i[0])).content)["route"]
+    Route = json.loads(requests.get('https://tsunkit.net/api/routing/maps/{}-{}'.format(MapareaId, i[0])).content)["result"]["route"]
     Points = [i[0], Route[str(i[1])][1]]
     try:
         index = TempPoints.index(Points)
