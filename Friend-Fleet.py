@@ -5,6 +5,10 @@ import json
 import copy
 import os
 
+requests.adapters.DEFAULT_RETRIES = 5 # 增加重连次数
+s = requests.session()
+s.keep_alive = False # 关闭多余连接
+
 MapareaId = int(input("请输入海域ID，然后回车："))
 KCClient = pymongo.MongoClient("47.106.254.135", 9018)[
     "kcwiki-development"]["friendlyrecords"]
@@ -51,7 +55,8 @@ RealPoint = []
 TempPoints = []
 TempPoint = []
 for i in RemovingFaults:
-    Route = json.loads(requests.get('https://tsunkit.net/api/routing/maps/{}-{}'.format(MapareaId, i[0])).content)["result"]["route"]
+    Route = json.loads(s.get(
+        'https://tsunkit.net/api/routing/maps/{}-{}'.format(MapareaId, i[0])).content)['result']["route"]
     Points = [i[0], Route[str(i[1])][1]]
     try:
         index = TempPoints.index(Points)
@@ -105,14 +110,14 @@ for Index, i in enumerate(RealPoint):
             wikiCodeStr += ' | 舰名{} = {}\n'.format(
                 k+1, FoundShipDetails(int(j['api_ship_id'][k]), 'name'))
             for l in range(0, len(j['api_Slot'][k])):
-                try:
+                if '-1' in j['api_Slot'][k]:
                     j['api_Slot'][k].remove('-1')
-                except:
-                    break
+                elif -1 in j['api_Slot'][k]:
+                    j['api_Slot'][k].remove(-1)
             wikiCodeStr += ' | 装备数{} = {}\n'.format(k+1, len(j['api_Slot'][k]))
             for m in range(0, len(j['api_Slot'][k])):
                 wikiCodeStr += ' | 装备图{}-{} = Soubi{}HD.png\n'.format(
-                    k+1, m+1, j['api_Slot'][k][m])
+                    k+1, m+1, ('000' + str(j['api_Slot'][k][m]))[-3:])
                 wikiCodeStr += ' | 装备名{}-{} = {}\n'.format(
                     k+1, m+1, FoundEquipmentDetails(int(j['api_Slot'][k][m]), 'name'))
         wikiCodeStr += '}}'
@@ -154,6 +159,5 @@ for Index, i in enumerate(VoiceList):
 voiceCodeStr += '{{页尾}}'
 with open('./FormationsCode/友军舰队语音.txt', 'w', encoding='utf-8') as File:
     File.write(voiceCodeStr)
-
 
 print("友军语音已生成，位于当前目录下的Voice文件夹内")
